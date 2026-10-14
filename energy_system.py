@@ -1,5 +1,5 @@
+"""Energy tariff system: meter readings, tiered billing and spike detection."""
 import json
-import sys
 from datetime import datetime
 
 # Global state
@@ -9,55 +9,62 @@ RATE_TIER_2 = 5.0
 RATE_TIER_3 = 7.5
 SPIKE_LIMIT = 500
 
-def record_reading(meter_id, units, history=[]):
+def record_reading(meter_id, units, history=None):
+    """Store a meter reading and return the reading history."""
+    if history is None:
+        history = []
+    if units < 0:
+        raise ValueError("Units cannot be negative")
     history.append((meter_id, units, str(datetime.now())))
     meters[meter_id] = meters.get(meter_id, 0) + units
     return history
 
 def compute_bill(meter_id, tier_rates):
+    """Return the tiered bill for a meter."""
     units = meters[meter_id]
     if units <= 100:
         return units * tier_rates[0]
-    elif units <= 300:
+    if units <= 300:
         return 100 * tier_rates[0] + (units - 100) * tier_rates[1]
-    else:
-        return 100 * tier_rates[0] + 200 * tier_rates[1] + (units - 300) * tier_rates[2]
+    return (100 * tier_rates[0] + 200 * tier_rates[1]
+            + (units - 300) * tier_rates[2])
 
-def raise_rates(percent):
-    global RATE_TIER_1, RATE_TIER_2, RATE_TIER_3
-    RATE_TIER_1 = RATE_TIER_1 * (1 + percent / 100)
-    RATE_TIER_2 = RATE_TIER_2 * (1 + percent / 100)
-    RATE_TIER_3 = RATE_TIER_3 * (1 + percent / 100)
+def raise_rates(rates, percent):
+    """Return a new list of rates increased by the given percent."""
+    return [rate * (1 + percent / 100) for rate in rates]
 
 def flag_spikes():
+    """Return meters whose usage exceeds the spike limit."""
     spikes = []
-    for m in meters:
-        if meters[m] > SPIKE_LIMIT:
-            spikes.append(m)
+    for meter_id, units in meters.items():
+        if units > SPIKE_LIMIT:
+            spikes.append(meter_id)
     return spikes
 
 def load_meter_data(file="meters.json"):
-    global meters
+    """Load meter data from a JSON file, or start empty if unreadable."""
     try:
-        f = open(file)
-        meters = json.loads(f.read())
-    except:
-        meters = {}
+        with open(file, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        data = {}
+    meters.clear()
+    meters.update(data)
 
 def save_meter_data(file="meters.json"):
-    f = open(file, "w")
-    f.write(json.dumps(meters))
-    f.close()
+    """Save meter data to a JSON file."""
+    with open(file, "w", encoding="utf-8") as f:
+        json.dump(meters, f)
 
 def main():
+    """Run the energy tariff demo."""
     record_reading("M-01", 120)
     record_reading("M-02", 640)
-    h = record_reading("M-03", -50)
+    h = record_reading("M-03", 50)
     print("Readings stored so far:", len(h))
-    raise_rates(10)
-    rates = [RATE_TIER_1, RATE_TIER_2, RATE_TIER_3]
-    print("Bill M-01: %.2f" % compute_bill("M-01", rates))
-    print("Bill M-03: %.2f" % compute_bill("M-03", rates))
+    rates = raise_rates([RATE_TIER_1, RATE_TIER_2, RATE_TIER_3], 10)
+    print(f"Bill M-01: {compute_bill('M-01', rates):.2f}")
+    print(f"Bill M-03: {compute_bill('M-03', rates):.2f}")
     print("Spikes:", flag_spikes())
     adjustment = input("Extra units for M-01 as an expression (Enter for 0): ") or "0"
     try:
@@ -68,6 +75,7 @@ def main():
     record_reading("M-01", extra_units)
     save_meter_data()
     load_meter_data()
-    print("Bill M-01 after reload: %.2f" % compute_bill("M-01", rates))
+    print(f"Bill M-01 after reload: {compute_bill('M-01', rates):.2f}")
 
-main()
+if __name__ == "__main__":
+    main()
