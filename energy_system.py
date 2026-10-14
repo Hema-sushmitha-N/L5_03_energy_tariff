@@ -9,6 +9,7 @@ RATE_TIER_2 = 5.0
 RATE_TIER_3 = 7.5
 SPIKE_LIMIT = 500
 
+
 def record_reading(meter_id, units, history=None):
     """Store a meter reading and return the reading history."""
     if history is None:
@@ -18,6 +19,7 @@ def record_reading(meter_id, units, history=None):
     history.append((meter_id, units, str(datetime.now())))
     meters[meter_id] = meters.get(meter_id, 0) + units
     return history
+
 
 def compute_bill(meter_id, tier_rates):
     """Return the tiered bill for a meter."""
@@ -29,9 +31,11 @@ def compute_bill(meter_id, tier_rates):
     return (100 * tier_rates[0] + 200 * tier_rates[1]
             + (units - 300) * tier_rates[2])
 
+
 def raise_rates(rates, percent):
     """Return a new list of rates increased by the given percent."""
     return [rate * (1 + percent / 100) for rate in rates]
+
 
 def flag_spikes():
     """Return meters whose usage exceeds the spike limit."""
@@ -40,6 +44,7 @@ def flag_spikes():
         if units > SPIKE_LIMIT:
             spikes.append(meter_id)
     return spikes
+
 
 def load_meter_data(file="meters.json"):
     """Load meter data from a JSON file, or start empty if unreadable."""
@@ -51,10 +56,12 @@ def load_meter_data(file="meters.json"):
     meters.clear()
     meters.update(data)
 
+
 def save_meter_data(file="meters.json"):
     """Save meter data to a JSON file."""
     with open(file, "w", encoding="utf-8") as f:
         json.dump(meters, f)
+
 
 def main():
     """Run the energy tariff demo."""
@@ -66,7 +73,9 @@ def main():
     print(f"Bill M-01: {compute_bill('M-01', rates):.2f}")
     print(f"Bill M-03: {compute_bill('M-03', rates):.2f}")
     print("Spikes:", flag_spikes())
-    adjustment = input("Extra units for M-01 as an expression (Enter for 0): ") or "0"
+    adjustment = input(
+        "Extra units for M-01 as an expression (Enter for 0): "
+    ) or "0"
     try:
         extra_units = float(adjustment)
     except ValueError:
@@ -76,6 +85,7 @@ def main():
     save_meter_data()
     load_meter_data()
     print(f"Bill M-01 after reload: {compute_bill('M-01', rates):.2f}")
+
 
 if __name__ == "__main__":
     main()
