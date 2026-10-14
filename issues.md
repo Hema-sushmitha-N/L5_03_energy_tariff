@@ -20,7 +20,7 @@ Line numbers refer to the **original** file, before the fixes.
 | # | Issue | Type | Line(s) | Tool / Code | Description | Fix approach |
 |---|---|---|---|---|---|---|
 | 1 | Use of `eval()` on user input | Security (Medium) | 63 | Bandit B307, Pylint W0123 | `eval(adjustment)` executes whatever the user types, so arbitrary code could run (CWE-78) | Replaced with `float(adjustment)` inside `try/except ValueError`, falling back to 0 on invalid input |
-| 2 | Mutable default argument | Bug | 12 | Pylint W0102 | `history=[]` is created once and shared across every call, so history leaks between calls | Default changed to `None`; a new list is created inside the function |
+| 2 | Mutable default argument | Bug | 12 | Pylint W0102 | `history=[]` is created once and shared across every call, so history leaks between calls | Default changed to `None` and a new list created inside the function; `main()` now creates its own `history` list and passes it to each call, so the reading count stays correct |
 | 3 | Bare `except:` | Bug / Style | 44 | Pylint W0702, Flake8 E722 | Catches every exception, including `KeyboardInterrupt`, and hides real errors | Catch only `(OSError, json.JSONDecodeError)` |
 | 4 | File opened without `with` and without encoding | Resource leak | 42, 48 | Pylint R1732, W1514 | Files were opened and closed manually; the file stays open if an error occurs; encoding was not specified | Used `with open(..., encoding="utf-8")` and `json.load` / `json.dump` |
 | 5 | Unused import | Style | 2 | Pylint W0611, Flake8 F401 | `sys` was imported but never used | Removed the import |

@@ -65,10 +65,11 @@ def save_meter_data(file="meters.json"):
 
 def main():
     """Run the energy tariff demo."""
-    record_reading("M-01", 120)
-    record_reading("M-02", 640)
-    h = record_reading("M-03", 50)
-    print("Readings stored so far:", len(h))
+    history = []
+    record_reading("M-01", 120, history)
+    record_reading("M-02", 640, history)
+    record_reading("M-03", 50, history)
+    print("Readings stored so far:", len(history))
     rates = raise_rates([RATE_TIER_1, RATE_TIER_2, RATE_TIER_3], 10)
     print(f"Bill M-01: {compute_bill('M-01', rates):.2f}")
     print(f"Bill M-03: {compute_bill('M-03', rates):.2f}")
@@ -81,7 +82,7 @@ def main():
     except ValueError:
         print("Invalid number entered, using 0.")
         extra_units = 0.0
-    record_reading("M-01", extra_units)
+    record_reading("M-01", extra_units, history)
     save_meter_data()
     load_meter_data()
     print(f"Bill M-01 after reload: {compute_bill('M-01', rates):.2f}")
